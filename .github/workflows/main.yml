@@ -11,17 +11,25 @@ jobs:
         with:
           node-version: 20
       - run: npm install -g pnpm@9
+      - name: Localizar proyecto
+        run: |
+          M=$(find . -name manifest.yml -not -path '*/node_modules/*' | head -1)
+          test -n "$M" || { echo "No se encuentra manifest.yml"; exit 1; }
+          echo "APP_DIR=$(dirname "$M")" >> "$GITHUB_ENV"
       - name: Compilar interfaz
-        working-directory: ui/pages/dashboard
+        working-directory: ${{ env.APP_DIR }}/ui/pages/dashboard
         run: |
           pnpm install --no-frozen-lockfile
           pnpm build
       - name: Comprobar que esta compilada
+        working-directory: ${{ env.APP_DIR }}
         run: |
           grep -q "liga" ui/pages/dashboard/src/dist/index.html
           ! grep -q "SIN COMPILAR" ui/pages/dashboard/src/dist/index.html
+          ls ui/pages/dashboard/src/dist/assets
       - name: Empaquetar
-        run: tar -czf ctti-aliga.tar.gz --exclude=node_modules manifest.yml app_docs functions logscale ui
+        working-directory: ${{ env.APP_DIR }}
+        run: tar -czf "$GITHUB_WORKSPACE/ctti-aliga.tar.gz" --exclude=node_modules manifest.yml app_docs functions logscale ui
       - uses: actions/upload-artifact@v4
         with:
           name: ctti-aliga
