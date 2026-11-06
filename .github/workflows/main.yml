@@ -1,0 +1,28 @@
+name: Build CTTi Aliga
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g pnpm@9
+      - name: Compilar interfaz
+        working-directory: ui/pages/dashboard
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm build
+      - name: Comprobar que esta compilada
+        run: |
+          grep -q "liga" ui/pages/dashboard/src/dist/index.html
+          ! grep -q "SIN COMPILAR" ui/pages/dashboard/src/dist/index.html
+      - name: Empaquetar
+        run: tar -czf ctti-aliga.tar.gz --exclude=node_modules manifest.yml app_docs functions logscale ui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ctti-aliga
+          path: ctti-aliga.tar.gz
